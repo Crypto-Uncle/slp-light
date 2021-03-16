@@ -8,7 +8,7 @@ import { BroadcastFacade } from './facade/BroadcastFacade';
 
 import { simpleSend } from './simple';
 
-import { BITBOX } from 'bitbox-sdk';
+import { BITBOX, ECPair } from 'bitbox-sdk';
 const bitbox = new BITBOX()
 
 export const createRawTx = (tokenAmount: BigNumber,
@@ -37,13 +37,16 @@ export const broadcastTransaction = (rawHex: string, broadcastFacade: BroadcastF
 
 // Start function
 export const start = async function() {
-  const words = '12 words...'
+  const words = '12 words'
   const seed = bitbox.Mnemonic.toSeed(words)
-  // see: https://github.com/simpleledger/bch-hd-keyring/blob/c517f2dd019af2b9874d5f9ca027596f673f85e8/index.js#L189-L190
-  const hdnode = bitbox.HDNode.fromSeed(seed, 'bitcoincash')
-  console.log(bitbox.HDNode.toWIF(hdnode))
-  const txId = await simpleSend(bitbox.HDNode.toWIF(hdnode),
-            "simpleledger:...",
+  const masterHDNode = bitbox.HDNode.fromSeed(seed,"mainnet")
+  const account = bitbox.HDNode.derivePath(masterHDNode, "m/44'/145'/0'")
+  const change = bitbox.HDNode.derivePath(account, "0/0")
+  const cashAddress = bitbox.HDNode.toCashAddress(change)
+  console.log(cashAddress)
+  const wif = bitbox.HDNode.toWIF(change)
+  const txId = await simpleSend(wif,
+            "simpleledger:....",
             "c198b22489060bdd5e3cea290858901c4b86282a6a023d4d2e36b31ff8688bf5",
             new BigNumber(1));
   console.log(txId);
